@@ -20,6 +20,7 @@ export async function setupPlayer() {
         });
     } catch (error) {
         console.error('Error setting up player:', error);
+        throw error; // Re-throw to allow UI to handle the error
     }
 }
 
@@ -34,16 +35,23 @@ export async function addTrack() {
     });
 }
 
-export async function playbackService() {
-    TrackPlayer.addEventListener(Event.RemotePlay, () => {
-        TrackPlayer.play();
-    });
+export function playbackService() {
+    const handlers = [
+        TrackPlayer.addEventListener(Event.RemotePlay, () => {
+            TrackPlayer.play();
+        }),
 
-    TrackPlayer.addEventListener(Event.RemotePause, () => {
-        TrackPlayer.pause();
-    });
+        TrackPlayer.addEventListener(Event.RemotePause, () => {
+            TrackPlayer.pause();
+        }),
 
-    TrackPlayer.addEventListener(Event.RemoteStop, () => {
-        TrackPlayer.stop();
-    });
+        TrackPlayer.addEventListener(Event.RemoteStop, () => {
+            TrackPlayer.stop();
+        }),
+    ];
+
+    // Return cleanup function
+    return () => {
+        handlers.forEach(handler => handler.remove());
+    };
 }

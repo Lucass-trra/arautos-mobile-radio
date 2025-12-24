@@ -25,7 +25,13 @@ export default function Player() {
         setup();
 
         return () => {
-            TrackPlayer.reset();
+            (async () => {
+                try {
+                    await TrackPlayer.reset();
+                } catch (error) {
+                    console.error('Error resetting player:', error);
+                }
+            })();
         };
     }, []);
 
