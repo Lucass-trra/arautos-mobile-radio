@@ -7,12 +7,20 @@
 ## Descrição do Projeto
 Este projeto é uma aplicação que permite aos usuários ouvir e interagir com transmissões de rádio ao vivo, oferecendo uma interface amigável e recursos de interação.
 
+## Funcionalidades
+- 🎵 Reprodução de rádio ao vivo em streaming
+- 📱 Controles de mídia na barra de notificação (Android/iOS)
+- 🔊 Controle de volume integrado
+- 🎧 Reprodução em segundo plano
+- ⏯️ Controles de play/pause
+
 
 ## Tecnologias Utilizadas
 - React Native
 - TypeScript
 - Node.js
 - Docker
+- React Native Track Player (para controle de mídia nativo)
 
 ## Como rodar o projeto via Docker (Recomendado)
 1. Clone o repositório: 
@@ -50,10 +58,16 @@ cd mobile-radio-arautos
 ```bash
 npm install
 ```
-4. Inicie o projeto: 
+4. (Apenas para Android) Faça o prebuild para gerar os arquivos nativos:
+```bash
+npx expo prebuild --platform android
+```
+5. Inicie o projeto: 
 ```bash 
 npx expo start
 ```
+
+> **Nota**: Para testar os controles de mídia na barra de notificação, você precisa executar o aplicativo em um dispositivo físico ou emulador usando `npx expo run:android` ou `npx expo run:ios`, pois os controles nativos não funcionam no Expo Go.
 
 ## Como contribuir 
 1. Faça o clone do repositório e crie sua branch:
