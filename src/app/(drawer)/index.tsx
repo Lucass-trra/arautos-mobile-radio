@@ -49,29 +49,40 @@ export default function Player() {
     const soundIcon: ComponentProps<typeof Feather>['name'] = isSoundOn ? 'volume-2' : 'volume-x';
 
     async function playRadio() {
+        // Sempre descarrega o som anterior (se existir) e carrega o stream novamente
+        // Isso garante que sempre reproduza o estado atual da rádio ao vivo
         if (sound) {
-        // Se já houver um som carregado, apenas o reproduz
-        await sound.playAsync();
-        setIsPlaying(true);
-        } else {
-        // Carrega o som a partir da URL
+            try {
+                await sound.unloadAsync();
+            } catch (error) {
+                console.warn('Erro ao descarregar som anterior:', error);
+            }
+        }
+        
+        // Carrega o stream da rádio do zero (ao vivo)
         try {
             const { sound: newSound } = await Audio.Sound.createAsync(
-            { uri: radioUrl },
-            { shouldPlay: true }
+                { uri: radioUrl },
+                { shouldPlay: true, volume: isSoundOn ? 1.0 : 0.0 }
             );
             setSound(newSound);
             setIsPlaying(true);
         } catch (error) {
             console.error('Erro ao carregar o stream de rádio', error);
         }
-        }
     }
 
     async function stopRadio() {
         if (sound) {
-        await sound.pauseAsync(); // Pausa a reprodução
-        setIsPlaying(false);
+            try {
+                // Descarrega completamente o áudio ao invés de pausar
+                // Isso garante que ao dar play novamente, pegue o stream ao vivo
+                await sound.unloadAsync();
+                setSound(null);
+                setIsPlaying(false);
+            } catch (error) {
+                console.warn('Erro ao parar rádio:', error);
+            }
         }
     }
 
@@ -124,7 +135,9 @@ const styles = StyleSheet.create({
     },
 
     containerPlayer: {
-        flexDirection: 'column',
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
         width: '30%',
         gap: 40,
     },
