@@ -1,7 +1,10 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
+#AI standard promts
+
 # dependencies
 node_modules/
+AI_standard_promts/*
 
 # Expo
 .expo/
@@ -39,3 +42,5 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+
