@@ -221,7 +221,7 @@ export default function Player() {
 
                 {/* TÍTULO E ARTISTA */}
                 <View style={styles.songInfo}>
-                    <Text style={styles.songTitle}>Web Rádio Arautos</Text>
+                    <Text style={styles.songTitle}>Rádio Arautos</Text>
                     <Text style={styles.artistName}>Assembleia de Deus Taquari</Text>
                 </View>
 
