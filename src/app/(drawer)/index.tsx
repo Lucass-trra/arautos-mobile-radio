@@ -1,7 +1,8 @@
 import { Feather } from '@expo/vector-icons';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
-import { Audio, InterruptionModeAndroid, InterruptionModeIOS, ResizeMode, Video } from 'expo-av';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { ComponentProps, useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -10,8 +11,6 @@ const { width, height } = Dimensions.get('window');
 
 export default function Player() {
     const navigation = useNavigation();
-    const videoRef = useRef<Video>(null);
-    const [sound, setSound] = useState<Audio.Sound | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [isSoundOn, setIsSoundOn] = useState(true);
     
@@ -25,16 +24,35 @@ export default function Player() {
     const radioUrl = 'https://stm1.conectastreaming.com:7016/;?type=http&nocache=3';
     const videoSource = require('../../../assets/images/background.mp4');
 
+    // Configuração do player de áudio
+    const audioPlayer = useAudioPlayer(radioUrl);
+    const audioStatus = useAudioPlayerStatus(audioPlayer);
+
+    // Configuração do player de vídeo
+    const videoPlayer = useVideoPlayer(videoSource, (player) => {
+        player.loop = true;
+        player.muted = true;
+        player.play();
+    });
+
+    // Inicia o player automaticamente ao montar o componente
     useEffect(() => {
-        Audio.setAudioModeAsync({
-            allowsRecordingIOS: false,
-            staysActiveInBackground: true,
-            interruptionModeIOS: InterruptionModeIOS.DuckOthers,
-            playsInSilentModeIOS: true,
-            shouldDuckAndroid: true,
-            interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
-        });
+        try {
+            audioPlayer.play();
+            setIsPlaying(true);
+        } catch (error) {
+            console.error('Erro ao iniciar reprodução automática:', error);
+        }
     }, []);
+
+    // Controla o volume do áudio
+    useEffect(() => {
+        try {
+            audioPlayer.volume = isSoundOn ? 1.0 : 0.0;
+        } catch (e) {
+            console.warn('Erro ao ajustar volume:', e);
+        }
+    }, [isSoundOn, audioPlayer]);
 
     // Anima as ondas quando está tocando
     useEffect(() => {
@@ -97,84 +115,36 @@ export default function Player() {
         };
     }, [isPlaying]);
 
-    useEffect(() => {
-        (async () => {
-            if (!sound) return;
-            try {
-                await sound.setVolumeAsync(isSoundOn ? 1.0 : 0.0);
-            } catch (e) { console.warn(e); }
-        })();
-    }, [isSoundOn, sound]);
-
-    useEffect(() => {
-        return () => {
-            (async () => {
-                if (sound) {
-                    try { await sound.unloadAsync(); } catch {}
-                }
-            })();
-        };
-    }, [sound]);
-
     const playOrPauseIcon: ComponentProps<typeof Feather>['name'] = isPlaying ? 'pause' : 'play';
 
-    async function playRadio() {
-        if (sound) {
-            try {
-                await sound.unloadAsync();
-            } catch (error) {
-                console.warn('Erro ao descarregar som anterior:', error);
-            }
-        }
-        
+    async function togglePlayPause() {
         try {
-            const { sound: newSound } = await Audio.Sound.createAsync(
-                { uri: radioUrl },
-                { shouldPlay: true, volume: isSoundOn ? 1.0 : 0.0 }
-            );
-            
-            // Monitora o status do som
-            newSound.setOnPlaybackStatusUpdate((status) => {
-                if (status.isLoaded) {
-                    setIsPlaying(status.isPlaying);
-                }
-            });
-            
-            setSound(newSound);
-            setIsPlaying(true);
-        } catch (error) {
-            console.error('Erro ao carregar o stream de rádio', error);
-            setIsPlaying(false);
-        }
-    }
-
-    async function stopRadio() {
-        setIsPlaying(false); // Atualiza IMEDIATAMENTE
-        
-        if (sound) {
-            try {
-                await sound.unloadAsync();
-                setSound(null);
-            } catch (error) {
-                console.warn('Erro ao parar rádio:', error);
+            if (isPlaying) {
+                // Para e remove o áudio do buffer
+                audioPlayer.pause();
+                audioPlayer.remove();
+                setIsPlaying(false);
+            } else {
+                // Recarrega o stream para sincronizar com a rádio ao vivo
+                audioPlayer.replace(radioUrl);
+                audioPlayer.play();
+                setIsPlaying(true);
             }
+        } catch (error) {
+            console.error('Erro ao controlar reprodução:', error);
         }
     }
 
     return(
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" />
+            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
             
             {/* VÍDEO DE FUNDO LOCAL */}
-            <Video
-                ref={videoRef}
-                source={videoSource}
+            <VideoView
+                player={videoPlayer}
                 style={styles.videoBackground}
-                resizeMode={ResizeMode.COVER}
-                shouldPlay
-                isLooping
-                isMuted
-                rate={1.0}
+                nativeControls={false}
+                contentFit="cover"
             />
 
             {/* OVERLAY ESCURO SOBRE O VÍDEO */}
@@ -257,7 +227,7 @@ export default function Player() {
                     <TouchableOpacity 
                         activeOpacity={0.8}
                         style={styles.playButtonOuter} 
-                        onPress={() => (isPlaying ? stopRadio() : playRadio())}
+                        onPress={togglePlayPause}
                     >
                         <View style={styles.playButtonMiddle}>
                             <View style={styles.playButtonInner}>
