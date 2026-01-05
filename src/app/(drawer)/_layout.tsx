@@ -25,6 +25,9 @@ export default function Layout() {
                     fontWeight: '600'
                 },
 
+                // CONFIGURAÇÃO DA STATUS BAR (BARRA SUPERIOR DO ANDROID)
+                headerStatusBarHeight: 0, // Remove espaço extra
+                
                 drawerActiveTintColor: globalStyles.enphaisisColor,
                 drawerInactiveTintColor: '#555',
                 drawerLabelStyle: {
@@ -56,7 +59,9 @@ export default function Layout() {
                 name="index"
                 options={{ 
                     title: 'Player',
-                    drawerIcon: ({ color, size }) => <Feather name="home" size={size} color={color} />
+                    drawerIcon: ({ color, size }) => <Feather name="home" size={size} color={color} />,
+                    // StatusBar transparente e com ícones brancos na tela do Player
+                    headerShown: false, // Esconde o header padrão na tela do player
                 }}  
             />
             <Drawer.Screen
