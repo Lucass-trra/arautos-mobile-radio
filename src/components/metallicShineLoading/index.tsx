@@ -1,29 +1,59 @@
 import { globalStyles } from "@/styles/global";
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useRef } from "react";
-import { Animated, Easing, Image, StyleSheet, View } from "react-native";
+import { useEffect, useMemo, useRef } from "react";
+import { Animated, AppState, Easing, Image, StyleSheet, View } from "react-native";
 import { styles } from "./styles";
 
 export default function MetallicShineLoading() {
-    const shimmerAnimation = useRef(new Animated.Value(0)).current;
+    const shimmer = useRef(new Animated.Value(0)).current;
+    const animationRef = useRef<Animated.CompositeAnimation | null>(null);
+    const appStateRef = useRef(AppState.currentState);
+
+    const translateX = useMemo(
+        () => shimmer.interpolate({
+            inputRange: [0, 1],
+            outputRange: [-120, 120],
+        }),
+        [shimmer]
+    );
 
     useEffect(() => {
-        shimmerAnimation.setValue(0);
-        Animated.loop(
-            Animated.timing(shimmerAnimation, {
-                toValue: 1,
-                duration: 1500,
-                easing: Easing.linear,
-                useNativeDriver: false,
-            })
-        ).start();
-    }, [shimmerAnimation]);
+        const startAnim = () => {
+            shimmer.setValue(0);
+            const anim = Animated.loop(
+                Animated.timing(shimmer, {
+                    toValue: 1,
+                    duration: 1600,
+                    easing: Easing.linear,
+                    useNativeDriver: true,
+                })
+            );
+            animationRef.current = anim;
+            anim.start();
+        };
 
-    const translateX = shimmerAnimation.interpolate({
-        inputRange: [0, 1],
-        outputRange: [-120, 200]
-    });
+        const stopAnim = () => {
+            animationRef.current?.stop();
+            animationRef.current = null;
+        };
+
+        startAnim();
+
+        const sub = AppState.addEventListener('change', (next) => {
+            appStateRef.current = next;
+            if (next === 'active') {
+                if (!animationRef.current) startAnim();
+            } else {
+                stopAnim();
+            }
+        });
+
+        return () => {
+            sub.remove();
+            stopAnim();
+        };
+    }, [shimmer]);
 
     return(
         <MaskedView

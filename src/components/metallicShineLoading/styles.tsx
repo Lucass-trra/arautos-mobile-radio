@@ -4,6 +4,7 @@ export const styles = StyleSheet.create({
     imageContainer: {
         width: 100,
         height: 100,
+        overflow: 'hidden',
     },
 
     maskWrapper: {
@@ -27,10 +28,9 @@ export const styles = StyleSheet.create({
     shimmerTrack: {
         position: 'absolute',
         top: 0,
-        left: 0,
-        width: 200,
-        height: 200,
-        overflow: 'hidden',
+        left: -10,
+        width: 220,
+        height: 100,
     },
 
     gradientStrip: {
