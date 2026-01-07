@@ -58,6 +58,8 @@ export default function MetallicShineLoading() {
     return(
         <MaskedView
             style={styles.imageContainer}
+            collapsable={false}
+            renderToHardwareTextureAndroid
             maskElement={
                 <View style={styles.maskWrapper}>
                     <Image 

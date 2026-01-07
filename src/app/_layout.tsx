@@ -1,17 +1,21 @@
 import { Loading } from '@/screens/Loading';
+import { globalStyles } from '@/styles/global';
 import { Feather } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 
 // Previne que a splash screen nativa feche automaticamente
-SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [appIsReady, setAppIsReady] = useState(false);
+  const [assetsReady, setAssetsReady] = useState(false);
+  const [minTimeDone, setMinTimeDone] = useState(false);
   const [fontsLoaded, fontError] = useFonts(Feather.font);
+  const hasHiddenSplashRef = useRef(false);
 
   useEffect(() => {
     if (fontError) {
@@ -19,6 +23,14 @@ export default function RootLayout() {
     }
   }, [fontError]);
 
+  // Inicia temporizador para tempo mínimo do loading (ex.: 1200ms)
+  useEffect(() => {
+    const MIN_LOADING_MS = 5000;
+    const id = setTimeout(() => setMinTimeDone(true), MIN_LOADING_MS);
+    return () => clearTimeout(id);
+  }, []);
+
+  // Prepara assets essenciais (ex.: fontes) em paralelo ao temporizador mínimo
   useEffect(() => {
     let isMounted = true;
 
@@ -26,47 +38,54 @@ export default function RootLayout() {
       if (!fontsLoaded) return;
 
       try {
-        // Coloque aqui outros assets que precisam estar prontos antes de sair do loading
         const assetPromises: Promise<unknown>[] = [];
-
         await Promise.all(assetPromises);
       } catch (e) {
         console.warn('Erro ao preparar assets', e);
       } finally {
-        if (isMounted) {
-          setAppIsReady(true);
-        }
+        if (isMounted) setAssetsReady(true);
       }
     }
 
     prepare();
-
     return () => {
       isMounted = false;
     };
   }, [fontsLoaded]);
 
+  // Libera o app somente quando tempo mínimo e assets estiverem prontos
+  useEffect(() => {
+    if (assetsReady && minTimeDone) {
+      setAppIsReady(true);
+    }
+  }, [assetsReady, minTimeDone]);
+
   const onLayoutRootView = useCallback(async () => {
-    if (appIsReady) {
-      await SplashScreen.hideAsync();
+    // Deixe a tela de Loading esconder a splash no cold start.
+    // Se já estivermos prontos (sem Loading), esconda aqui como fallback.
+    if (appIsReady && !hasHiddenSplashRef.current) {
+      try {
+        await SplashScreen.hideAsync();
+      } finally {
+        hasHiddenSplashRef.current = true;
+      }
     }
   }, [appIsReady]);
 
-  // Mostre a tela de loading customizada enquanto o app não está pronto
-  if (!appIsReady) {
-    return <Loading />;
-  }
-
   return (
-    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <Stack>
-        <Stack.Screen 
-          name="(drawer)" 
-          options={{
-            headerShown: false,
-          }}
-        />
-      </Stack>
+    <View style={{ flex: 1, backgroundColor: globalStyles.black1 }} onLayout={onLayoutRootView} collapsable={false}>
+      {appIsReady ? (
+        <Stack>
+          <Stack.Screen
+            name="(drawer)"
+            options={{
+              headerShown: false,
+            }}
+          />
+        </Stack>
+      ) : (
+        <Loading />
+      )}
     </View>
   );
 }
