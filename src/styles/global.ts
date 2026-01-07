@@ -6,4 +6,7 @@ export const globalStyles = {
     black2: '#333333',
     white1: '#FFFFFF',
     white2: '#EDEDED',
+    gray1: '#7A7A7A',
+    gray2: '#8c9196ff',   
+    gray3: '#C4C4C4',
 }
